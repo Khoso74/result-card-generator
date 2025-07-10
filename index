@@ -1,1 +1,441 @@
-# result-card-generator
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اکیڈمی رزلٹ کارڈ جنریٹر</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Poppins & Roboto -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- html2pdf.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        body {
+            font-family: 'Poppins', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #e0eafc, #cfdef3);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            padding: 1rem; /* پیڈنگ کم کی گئی */
+            transition: all 0.5s ease-in-out;
+        }
+
+        .form-section, .result-section {
+            width: 100%;
+            max-width: 800px;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .hidden-section {
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .input-field {
+            background-color: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            color: #333;
+            placeholder-color: #666;
+        }
+        .input-field:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.5);
+        }
+
+        html[dir="rtl"] .text-left { text-align: right; }
+        html[dir="rtl"] .text-right { text-align: left; }
+        html[dir="rtl"] .ml-auto { margin-right: auto; margin-left: 0; }
+        html[dir="rtl"] .mr-auto { margin-left: auto; margin-right: 0; }
+        html[dir="rtl"] .space-x-4 > *:not([hidden]) ~ *:not([hidden]) {
+            --tw-space-x-reverse: 1;
+            margin-right: calc(1rem * var(--tw-space-x-reverse));
+            margin-left: calc(1rem * calc(1 - var(--tw-space-x-reverse)));
+        }
+
+        table {
+            width: 100%;
+            table-layout: fixed;
+            border-collapse: collapse;
+            font-size: 10px;
+        }
+        th, td {
+            padding: 2px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #f5f5f6;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <!-- ڈیٹا انٹری فارم سیکشن -->
+    <div id="formSection" class="glass-card form-section p-8 md:p-12 w-full max-w-2xl mx-auto z-10">
+        <div class="text-center mb-4">
+            <img src="https://placehold.co/150x50/000000/FFFFFF?text=School+Logo" alt="اکیڈمی لوگو" class="mx-auto mb-2 rounded-lg">
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-1">نتیجہ کارڈ جنریٹر</h1>
+            <p class="text-gray-600 text-opacity-90 text-xs">طالب علم کا نتیجہ کارڈ بنانے کے لیے معلومات درج کریں۔</p>
+        </div>
+
+        <div class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div>
+                    <label for="studentName" class="block text-gray-700 text-xs font-semibold mb-1">طالب علم کا نام</label>
+                    <input type="text" id="studentName" class="w-full p-2 rounded-md input-field text-xs" placeholder="مثلاً، علی خان">
+                </div>
+                <div>
+                    <label for="rollNumber" class="block text-gray-700 text-xs font-semibold mb-1">رول نمبر</label>
+                    <input type="text" id="rollNumber" class="w-full p-2 rounded-md input-field text-xs" placeholder="مثلاً، 12345">
+                </div>
+            </div>
+            <div>
+                <label for="studentClass" class="block text-gray-700 text-xs font-semibold mb-1">کلاس</label>
+                <input type="text" id="studentClass" class="w-full p-2 rounded-md input-field text-xs" placeholder="مثلاً، دسویں جماعت">
+            </div>
+            <div>
+                <label for="emailAddress" class="block text-gray-700 text-xs font-semibold mb-1">ای میل ایڈریس (اختیاری)</label>
+                <input type="email" id="emailAddress" class="w-full p-2 rounded-md input-field text-xs" placeholder="مثلاً، student@example.com">
+            </div>
+
+            <div id="subjectsContainer" class="space-y-2">
+                <h3 class="text-lg font-semibold text-gray-800 mt-4 mb-2 text-xs">مضامین کے نمبرز</h3>
+                <div class="flex flex-col md:flex-row gap-2 subject-row">
+                    <input type="text" class="subject-name w-full md:w-1/3 p-2 rounded-md input-field text-xs" value="انگریزی" readonly>
+                    <input type="number" class="marks-obtained w-full md:w-1/3 p-2 rounded-md input-field text-xs" placeholder="حاصل کردہ نمبر" min="0" max="100">
+                    <input type="number" class="total-subject-marks w-full md:w-1/3 p-2 rounded-md input-field text-xs" placeholder="کل نمبر" min="0" max="100">
+                </div>
+                <div class="flex flex-col md:flex-row gap-2 subject-row">
+                    <input type="text" class="subject-name w-full md:w-1/3 p-2 rounded-md input-field text-xs" value="اردو" readonly>
+                    <input type="number" class="marks-obtained w-full md:w-1/3 p-2 rounded-md input-field text-xs" placeholder="حاصل کردہ نمبر" min="0" max="100">
+                    <input type="number" class="total-subject-marks w-full md:w-1/3 p-2 rounded-md input-field text-xs" placeholder="کل نمبر" min="0" max="100">
+                </div>
+                <div class="flex flex-col md:flex-row gap-2 subject-row">
+                    <input type="text" class="subject-name w-full md:w-1/3 p-2 rounded-md input-field text-xs" value="سائنس" readonly>
+                    <input type="number" class="marks-obtained w-full md:w-1/3 p-2 rounded-md input-field text-xs" placeholder="حاصل کردہ نمبر" min="0" max="100">
+                    <input type="number" class="total-subject-marks w-full md:w-1/3 p-2 rounded-md input-field text-xs" placeholder="کل نمبر" min="0" max="100">
+                </div>
+                <div class="flex flex-col md:flex-row gap-2 subject-row">
+                    <input type="text" class="subject-name w-full md:w-1/3 p-2 rounded-md input-field text-xs" value="ریاضی" readonly>
+                    <input type="number" class="marks-obtained w-full md:w-1/3 p-2 rounded-md input-field text-xs" placeholder="حاصل کردہ نمبر" min="0" max="100">
+                    <input type="number" class="total-subject-marks w-full md:w-1/3 p-2 rounded-md input-field text-xs" placeholder="کل نمبر" min="0" max="100">
+                </div>
+                <div class="flex flex-col md:flex-row gap-2 subject-row">
+                    <input type="text" class="subject-name w-full md:w-1/3 p-2 rounded-md input-field text-xs" value="اسلامیات" readonly>
+                    <input type="number" class="marks-obtained w-full md:w-1/3 p-2 rounded-md input-field text-xs" placeholder="حاصل کردہ نمبر" min="0" max="100">
+                    <input type="number" class="total-subject-marks w-full md:w-1/3 p-2 rounded-md input-field text-xs" placeholder="کل نمبر" min="0" max="100">
+                </div>
+            </div>
+
+            <button id="generateResultBtn" class="w-full bg-black hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg shadow-xl transition duration-300 ease-in-out transform hover:scale-105 mt-4 text-xs">
+                نتیجہ کارڈ بنائیں
+            </button>
+        </div>
+    </div>
+
+    <!-- تیار شدہ رزلٹ کارڈ سیکشن (ابتدائی طور پر پوشیدہ) -->
+    <div id="resultSection" class="glass-card result-section p-8 md:p-12 w-full max-w-4xl mx-auto hidden-section">
+        <div class="result-card-content" id="resultCardContent">
+            <div class="text-center mb-4 border-b-2 border-gray-200 pb-2">
+                <img src="https://placehold.co/150x50/000000/FFFFFF?text=School+Logo" alt="اکیڈمی لوگو" class="mx-auto mb-2 rounded-lg">
+                <h2 class="text-2xl font-extrabold text-gray-800">اکیڈمی رزلٹ کارڈ</h2>
+                <p class="text-gray-600 text-xs">تعلیمی سال: 2024-2025</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4 text-gray-700 text-xs">
+                <div>
+                    <p><strong class="font-semibold">طالب علم کا نام:</strong> <span id="displayStudentName"></span></p>
+                    <p><strong class="font-semibold">رول نمبر:</strong> <span id="displayRollNumber"></span></p>
+                </div>
+                <div class="md:text-right">
+                    <p><strong class="font-semibold">کلاس:</strong> <span id="displayStudentClass"></span></p>
+                    <p><strong class="font-semibold">تاریخ:</strong> <span id="displayDate"></span></p>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto mb-4">
+                <table class="min-w-full bg-white border border-gray-300 rounded-lg">
+                    <thead>
+                        <tr class="bg-gray-100 text-gray-700 uppercase text-xs leading-tight">
+                            <th class="py-2 px-2 text-right">مضمون</th>
+                            <th class="py-2 px-2 text-center">حاصل کردہ نمبر</th>
+                            <th class="py-2 px-2 text-center">کل نمبر</th>
+                        </tr>
+                    </thead>
+                    <tbody id="displaySubjectsMarks" class="text-gray-600 text-xs font-light">
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-gray-800 font-semibold mb-4 text-xs">
+                <div>
+                    <p>کل حاصل کردہ نمبر: <span id="displayTotalMarks" class="text-blue-600"></span></p>
+                    <p>فیصد: <span id="displayPercentage" class="text-green-600"></span></p>
+                </div>
+                <div class="md:text-left">
+                    <p>گریڈ: <span id="displayGrade" class="text-purple-600"></span></p>
+                    <p>حیثیت: <span id="displayStatus" class="text-red-600"></span></p>
+                </div>
+                <div class="col-span-2 mt-2 pt-2 border-t border-gray-200 text-xs">
+                    <p>کل مضامین کے کل نمبر: <span id="displayOverallTotalMarks" class="text-gray-800"></span></p>
+                    <p>کل مضامین میں حاصل کردہ نمبر: <span id="displayOverallObtainedMarks" class="text-gray-800"></span></p>
+                </div>
+            </div>
+
+            <div class="text-center mt-4 pt-2 border-t-2 border-gray-200">
+                <p class="text-gray-700 mb-2">_________________________</p>
+                <p class="text-gray-800 font-semibold text-xs">پرنسپل کے دستخط</p>
+            </div>
+        </div>
+
+        <div class="flex flex-col md:flex-row justify-center space-y-4 md:space-y-0 md:space-x-4 mt-4">
+            <button id="downloadPdfBtn" class="bg-black hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105 text-xs">
+                پی ڈی ایف ڈاؤن لوڈ کریں
+            </button>
+            <button id="emailResultBtn" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105 text-xs">
+                نتیجہ کارڈ ای میل کریں
+            </button>
+            <button id="goBackBtn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105 text-xs">
+                واپس جائیں
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const formSection = document.getElementById('formSection');
+        const resultSection = document.getElementById('resultSection');
+        const subjectsContainer = document.getElementById('subjectsContainer');
+        const generateResultBtn = document.getElementById('generateResultBtn');
+        const downloadPdfBtn = document.getElementById('downloadPdfBtn');
+        const emailResultBtn = document.getElementById('emailResultBtn');
+        const goBackBtn = document.getElementById('goBackBtn');
+        const resultCardContent = document.getElementById('resultCardContent');
+        const displayStudentName = document.getElementById('displayStudentName');
+        const displayRollNumber = document.getElementById('displayRollNumber');
+        const displayStudentClass = document.getElementById('displayStudentClass');
+        const displayDate = document.getElementById('displayDate');
+        const displaySubjectsMarks = document.getElementById('displaySubjectsMarks');
+        const displayTotalMarks = document.getElementById('displayTotalMarks');
+        const displayPercentage = document.getElementById('displayPercentage');
+        const displayGrade = document.getElementById('displayGrade');
+        const displayStatus = document.getElementById('displayStatus');
+        const displayOverallTotalMarks = document.getElementById('displayOverallTotalMarks');
+        const displayOverallObtainedMarks = document.getElementById('displayOverallObtainedMarks');
+        const emailAddressInput = document.getElementById('emailAddress');
+
+        function generateResultCard() {
+            const studentName = document.getElementById('studentName').value.trim();
+            const rollNumber = document.getElementById('rollNumber').value.trim();
+            const studentClass = document.getElementById('studentClass').value.trim();
+
+            if (!studentName || !rollNumber || !studentClass) {
+                alert("براہ کرم طالب علم کی تمام تفصیلات (نام، رول نمبر، کلاس) پُر کریں۔");
+                return;
+            }
+
+            let totalMarksObtained = 0;
+            let overallTotalPossibleMarks = 0;
+            const subjectsData = [];
+            let isValidInput = true;
+
+            const subjectRows = subjectsContainer.querySelectorAll('.subject-row');
+            subjectRows.forEach(row => {
+                const subjectNameInput = row.querySelector('.subject-name');
+                const marksObtainedInput = row.querySelector('.marks-obtained');
+                const totalSubjectMarksInput = row.querySelector('.total-subject-marks');
+
+                const subjectName = subjectNameInput.value.trim();
+                const marksObtained = parseInt(marksObtainedInput.value);
+                const totalSubjectMarks = parseInt(totalSubjectMarksInput.value);
+
+                if (isNaN(totalSubjectMarks) || totalSubjectMarks <= 0) {
+                    alert(`'${subjectName}' کے کل نمبر ایک مثبت عدد ہونے چاہئیں۔`);
+                    isValidInput = false;
+                    return;
+                }
+                if (isNaN(marksObtained) || marksObtained < 0 || marksObtained > totalSubjectMarks) {
+                    alert(`'${subjectName}' کے حاصل کردہ نمبر 0 اور ${totalSubjectMarks} کے درمیان ہونے چاہئیں۔`);
+                    isValidInput = false;
+                    return;
+                }
+
+                subjectsData.push({ name: subjectName, obtained: marksObtained, total: totalSubjectMarks });
+                totalMarksObtained += marksObtained;
+                overallTotalPossibleMarks += totalSubjectMarks;
+            });
+
+            if (!isValidInput || subjectsData.length === 0) {
+                alert("براہ کرم رزلٹ بنانے کے لیے کم از کم ایک درست مضمون اور نمبر شامل کریں۔");
+                return;
+            }
+
+            const percentage = overallTotalPossibleMarks > 0 ? ((totalMarksObtained / overallTotalPossibleMarks) * 100).toFixed(2) : 0;
+            const grade = calculateGrade(percentage);
+            const status = percentage >= 40 ? 'پاس' : 'فیل';
+
+            displayStudentName.textContent = studentName;
+            displayRollNumber.textContent = rollNumber;
+            displayStudentClass.textContent = studentClass;
+            displayDate.textContent = new Date().toLocaleDateString('ur-PK', { year: 'numeric', month: 'long', day: 'numeric' });
+
+            displaySubjectsMarks.innerHTML = '';
+            subjectsData.forEach(subject => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="py-2 px-2 text-right">${subject.name}</td>
+                    <td class="py-2 px-2 text-center">${subject.obtained}</td>
+                    <td class="py-2 px-2 text-center">${subject.total}</td>
+                `;
+                displaySubjectsMarks.appendChild(row);
+            });
+
+            displayTotalMarks.textContent = totalMarksObtained;
+            displayPercentage.textContent = `${percentage}%`;
+            displayGrade.textContent = grade;
+            displayStatus.textContent = status;
+            displayStatus.classList.add(status === 'پاس' ? 'text-green-600' : 'text-red-600');
+
+            displayOverallTotalMarks.textContent = overallTotalPossibleMarks;
+            displayOverallObtainedMarks.textContent = totalMarksObtained;
+
+            formSection.classList.add('hidden-section');
+            resultSection.classList.remove('hidden-section');
+            setTimeout(() => {
+                formSection.style.display = 'none';
+                resultSection.style.display = 'block';
+            }, 500);
+        }
+
+        function calculateGrade(percentage) {
+            if (percentage >= 90) return 'A+';
+            if (percentage >= 80) return 'A';
+            if (percentage >= 70) return 'B';
+            if (percentage >= 60) return 'C';
+            if (percentage >= 50) return 'D';
+            if (percentage >= 40) return 'E';
+            return 'F';
+        }
+
+        function downloadPdf() {
+            const element = document.getElementById('formSection'); // فارم سیکشن کو استعمال کیا گیا
+            setTimeout(() => {
+                const opt = {
+                    margin: [5, 5, 5, 5],
+                    filename: 'اکیڈمی_رزلٹ_کارڈ.pdf',
+                    image: { type: 'jpeg', quality: 0.95 },
+                    html2canvas: {
+                        scale: 0.5, // اسکیل کم کیا گیا
+                        useCORS: true,
+                        letterRendering: true,
+                        width: 190,
+                        windowWidth: document.body.scrollWidth
+                    },
+                    jsPDF: {
+                        unit: 'mm',
+                        format: [210, 297],
+                        orientation: 'portrait',
+                        putOnlyUsedFonts: true,
+                        floatPrecision: 16
+                    }
+                };
+                html2pdf().from(element).set(opt).toPdf().get('pdf').then(function (pdf) {
+                    const totalPages = pdf.internal.getNumberOfPages();
+                    for (let i = 1; i <= totalPages; i++) {
+                        pdf.setPage(i);
+                        pdf.setFontSize(10);
+                        pdf.text('صفحہ ' + i + ' از ' + totalPages, 190, 287, { align: 'right' });
+                    }
+                    pdf.save();
+                }).catch(error => console.error('PDF جنریشن میں خرابی:', error));
+            }, 100);
+        }
+
+        function emailResultCard() {
+            const studentName = document.getElementById('studentName').value.trim();
+            const rollNumber = document.getElementById('rollNumber').value.trim();
+            const studentClass = document.getElementById('studentClass').value.trim();
+            const totalMarks = displayTotalMarks.textContent;
+            const percentage = displayPercentage.textContent;
+            const grade = displayGrade.textContent;
+            const status = displayStatus.textContent;
+            const recipientEmail = emailAddressInput.value.trim();
+
+            if (!recipientEmail) {
+                alert("براہ کرم ای میل ایڈریس درج کریں۔");
+                return;
+            }
+
+            const emailBody = `
+                <html>
+                <head>
+                    <style>
+                        body { font-family: 'Poppins', 'Roboto', sans-serif; background-color: #f5f5f5; padding: 20px; }
+                        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); }
+                        h2 { color: #1f2937; text-align: center; }
+                        p { color: #374151; line-height: 1.6; }
+                        .highlight { color: #16a34a; font-weight: bold; }
+                        .footer { text-align: center; color: #6b7280; margin-top: 20px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <h2>اکیڈمی رزلٹ کارڈ - ${studentName}</h2>
+                        <p>محترم والدین/سرپرست،</p>
+                        <p>براہ کرم اپنے بچے کے تعلیمی نتائج درج ذیل ملاحظہ فرمائیں:</p>
+                        <ul>
+                            <li>طالب علم کا نام: ${studentName}</li>
+                            <li>رول نمبر: ${rollNumber}</li>
+                            <li>کلاس: ${studentClass}</li>
+                            <li>کل حاصل کردہ نمبر: ${totalMarks}</li>
+                            <li>فیصد: <span class="highlight">${percentage}</span></li>
+                            <li>گریڈ: <span class="highlight">${grade}</span></li>
+                            <li>حیثیت: <span class="highlight">${status}</span></li>
+                        </ul>
+                        <p class="footer">مخلص،<br>اکیڈمی انتظامیہ</p>
+                    </div>
+                </body>
+                </html>
+            `;
+
+            const subject = encodeURIComponent(`Result Card for ${studentName} - Roll No: ${rollNumber}`);
+            const body = encodeURIComponent(emailBody);
+            const mailtoLink = `mailto:${recipientEmail}?subject=${subject}&body=${body}`;
+            window.location.href = mailtoLink;
+        }
+
+        function goBackToForm() {
+            resultSection.classList.add('hidden-section');
+            formSection.classList.remove('hidden-section');
+            setTimeout(() => {
+                resultSection.style.display = 'none';
+                formSection.style.display = 'block';
+            }, 500);
+        }
+
+        generateResultBtn.addEventListener('click', generateResultCard);
+        downloadPdfBtn.addEventListener('click', downloadPdf);
+        emailResultBtn.addEventListener('click', emailResultCard);
+        goBackBtn.addEventListener('click', goBackToForm);
+    </script>
+</body>
+</html>
